@@ -1,5 +1,7 @@
 var exec = require("child_process").exec;
 var querystring = require("querystring");
+var fs = require("fs");
+var formidable = require("formidable");
 
 function defaultHandler(request, response) {
     console.log("Default request handler was called.");
@@ -20,7 +22,7 @@ function fileList(request, response) {
     });
 }
 
-function start(request, response) {
+function sendText(request, response) {
     console.log("Request handler 'start' was called.");
 
     var body = '<html>' +
@@ -28,8 +30,8 @@ function start(request, response) {
         '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />' +
         '</head>' +
         '<body>' +
-        '<form action="/upload" method="post">' +
-        '<textarea name="text" rows="20" cols="60">' +
+        '<form action="/showText" method="post">' +
+        '<textarea name="text" rows="1" cols="60">' +
         '</textarea>' +
         '<input type="submit" value="Submit text" />' +
         '</form>' +
@@ -41,9 +43,9 @@ function start(request, response) {
     response.end();
 }
 
-function upload(request, response) {
+function showText(request, response) {
     var postData = "";
-    console.log("Request handler 'upload' was called.");
+    console.log("Request handler 'showText' was called.");
 
     request.setEncoding("utf8");
 
@@ -59,6 +61,65 @@ function upload(request, response) {
     });
 }
 
+function uploadImage(request, response) {
+    console.log("Request handler 'sendImage' was called.");
+
+    var body = '<html>' +
+        '<head>' +
+        '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />' +
+        '</head>' +
+        '<body>' +
+        '<form action="/showImage" method="post" enctype="multipart/form-data" >' +
+        '<input type="text" name="title" placeholder="title"> <br>' +
+        '<input type="file" name="image"> <br>' +
+        '<input type="submit" value="upload file">' +
+        '</form>' +
+        '</body>' +
+        '</html>';
+    response.writeHead(200, { "Content-Type": "text/html" });
+    response.write(body);
+    response.end();
+}
+
+function showImage(request, response) {
+    console.log("Request handler 'showImage' was called.");
+
+    var form = new formidable.IncomingForm();
+    form.uploadDir = "./image";
+    form.keepExtensions = true;
+    form.parse(request, function (error, fields, files) {
+        var util = require('util');
+        util.inspect({fields: fields, files: files});
+
+        var inStream = fs.createReadStream(files.image[0].path);
+        var outStream = fs.createWriteStream("./image/test.png");
+
+        inStream.pipe(outStream);
+        inStream.on('end', function () {
+            fs.unlinkSync(files.image[0].path);
+        });
+
+        response.writeHead(200, { "Content-Type": "text/html" });
+        response.write("received image <br/>" + fields.title + "<br/>");
+        response.write("<img src='/image' />");
+        response.end();
+    });
+}
+
+function image(request, response) {
+    console.log("Request handler 'show' was called.");
+    fs.readFile("./image/test.png", "binary", function (error, file) {
+        if (error) {
+            response.writeHead(500, { "Content-Type": "text/plain" });
+            response.write(error + "\n");
+        } else {
+            response.writeHead(200, { "Content-Type": "image/png" });
+            response.write(file, "binary");
+        }
+        response.end();
+    });
+}
+
 function notFound(request, response) {
     response.writeHead(404, { "Content-Type": "text/plain" });
     response.write("404 Not found");
@@ -68,7 +129,10 @@ function notFound(request, response) {
 exports.handlerList = {
     "/": defaultHandler,
     "/filelist": fileList,
-    "/start": start,
-    "/upload": upload,
+    "/sendText": sendText,
+    "/showText": showText,
+    "/sendImage": uploadImage,
+    "/showImage": showImage,
+    "/image": image,
     "/notFound": notFound
 }
