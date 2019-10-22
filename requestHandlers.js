@@ -62,7 +62,7 @@ function showText(request, response) {
 }
 
 function uploadImage(request, response) {
-    console.log("Request handler 'sendImage' was called.");
+    console.log("Request handler 'uploadImage' was called.");
 
     var body = '<html>' +
         '<head>' +
@@ -91,12 +91,12 @@ function showImage(request, response) {
         var util = require('util');
         util.inspect({fields: fields, files: files});
 
-        var inStream = fs.createReadStream(files.image[0].path);
+        var inStream = fs.createReadStream(files.image.path);
         var outStream = fs.createWriteStream("./image/test.png");
 
         inStream.pipe(outStream);
         inStream.on('end', function () {
-            fs.unlinkSync(files.image[0].path);
+            fs.unlinkSync(files.image.path);
         });
 
         response.writeHead(200, { "Content-Type": "text/html" });
@@ -107,7 +107,7 @@ function showImage(request, response) {
 }
 
 function image(request, response) {
-    console.log("Request handler 'show' was called.");
+    console.log("Request handler 'image' was called.");
     fs.readFile("./image/test.png", "binary", function (error, file) {
         if (error) {
             response.writeHead(500, { "Content-Type": "text/plain" });
@@ -131,7 +131,7 @@ exports.handlerList = {
     "/filelist": fileList,
     "/sendText": sendText,
     "/showText": showText,
-    "/sendImage": uploadImage,
+    "/uploadImage": uploadImage,
     "/showImage": showImage,
     "/image": image,
     "/notFound": notFound
